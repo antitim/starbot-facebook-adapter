@@ -15,9 +15,7 @@ module.exports = class FacebookAdapter {
     self.receiver = async function (req, res) {
       res.status(200);
 
-      if (req.query['hub.mode'] === 'subscribe' &&
-          req.query['hub.verify_token'] === self.verifyToken) {
-
+      if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === self.verifyToken) {
         res.send(req.query['hub.challenge']);
       }
 
@@ -35,7 +33,6 @@ module.exports = class FacebookAdapter {
 
                 userId = answer.userId.split('fb_')[1];
                 text = answer.text;
-                let attachment = answer.attachment || '';
 
                 await axios.request({
                   url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -45,11 +42,11 @@ module.exports = class FacebookAdapter {
                     access_token: self.pageAccessToken
                   },
                   data: JSON.stringify({
-                    "recipient": {
-                      "id": userId
+                    recipient: {
+                      id: userId
                     },
-                    "message": {
-                      "text": text
+                    message: {
+                      text: text
                     }
                   })
                 });
