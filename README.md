@@ -1,6 +1,30 @@
 # starbot-facebook-adapter [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
 
-## Лицензия
+## About
+
+Facebook adapter for [StarBot](https://github.com/antitim/starbot)
+
+## Installation
+
+```sh
+$ npm install --save starbot-facebook-adapter
+```
+
+## Options
+
+```js
+const bot = Starbot({
+  ...
+  adapter: {
+    type: 'starbot-facebook-adapter',
+    pageAccessToken: 'pageAccessToken',
+    verifyToken: 'verifyToken'
+  }
+  ...
+});
+```
+
+## License
 
 MIT © [antitim](http://vk.com/antitim)
 

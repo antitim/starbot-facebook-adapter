@@ -2,61 +2,53 @@
 
 const axios = require('axios');
 
-module.exports = class FacebookAdapter {
+module.exports = function (settings, botControl) {
+  let { pageAccessToken, verifyToken } = settings;
 
-  constructor (options, botControl) {
-    let self = this;
+  return async (req, res) => {
+    res.status(200);
 
-    self.pageAccessToken = options.pageAccessToken;
-    self.verifyToken = options.verifyToken;
+    if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === verifyToken) {
+      res.send(req.query['hub.challenge']);
+    }
 
-    self.botControl = botControl;
+    if (req.body && req.body.object) {
+      let data = req.body;
 
-    self.receiver = async function (req, res) {
-      res.status(200);
+      if (data.object === 'page' && data.entry) {
+        for (let entry of data.entry) {
+          for (let event of entry.messaging) {
+            if (event.message) {
+              let text = event.message.text || '';
+              let userId = 'fb_' + event.sender.id;
 
-      if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === self.verifyToken) {
-        res.send(req.query['hub.challenge']);
-      }
+              let answer = await botControl(userId, text);
 
-      if (req.body && req.body.object) {
-        let data = req.body;
+              userId = answer.userId.split('fb_')[1];
+              text = answer.text;
 
-        if (data.object === 'page' && data.entry) {
-          for (let entry of data.entry) {
-            for (let event of entry.messaging) {
-              if (event.message) {
-                let text = event.message.text || '';
-                let userId = 'fb_' + event.sender.id;
-
-                let answer = await self.botControl(userId, text);
-
-                userId = answer.userId.split('fb_')[1];
-                text = answer.text;
-
-                await axios.request({
-                  url: 'https://graph.facebook.com/v2.6/me/messages',
-                  method: 'POST',
-                  headers: {'Content-Type': 'application/json'},
-                  params: {
-                    access_token: self.pageAccessToken
+              await axios.request({
+                url: 'https://graph.facebook.com/v2.6/me/messages',
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                params: {
+                  access_token: pageAccessToken
+                },
+                data: JSON.stringify({
+                  recipient: {
+                    id: userId
                   },
-                  data: JSON.stringify({
-                    recipient: {
-                      id: userId
-                    },
-                    message: {
-                      text: text
-                    }
-                  })
-                });
-              }
+                  message: {
+                    text: text
+                  }
+                })
+              });
             }
-          };
-        }
+          }
+        };
       }
+    }
 
-      res.end();
-    };
-  }
+    res.end();
+  };
 };

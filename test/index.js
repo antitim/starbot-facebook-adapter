@@ -11,13 +11,13 @@ describe('FB Adapter', () => {
     message: 'Кто там?'
   });
 
-  let fb = new Adapter({
+  let fb = Adapter({
     pageAccessToken: 'pageAccessToken',
     verifyToken: 'verifyToken'
   }, bot);
 
   it('confirmation', async () => {
-    await fb.receiver({query: {
+    await fb({query: {
       'hub.mode': 'subscribe',
       'hub.verify_token': 'verifyToken',
       'hub.challenge': 'foo'
@@ -31,7 +31,7 @@ describe('FB Adapter', () => {
   });
 
   it('confirmation fail', async () => {
-    await fb.receiver({query: {
+    await fb({query: {
       'hub.mode': 'subscribe',
       'hub.verify_token': 'verifyTokenBar',
       'hub.challenge': 'foo'
@@ -55,7 +55,7 @@ describe('FB Adapter', () => {
       });
     });
 
-    await fb.receiver({
+    await fb({
       query: {
         'hub.mode': 'subscribe'
       },
