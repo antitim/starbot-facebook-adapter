@@ -13,14 +13,11 @@ $ npm install --save starbot-facebook-adapter
 ## Options
 
 ```js
-const bot = Starbot({
-  ...
-  adapter: {
-    type: 'starbot-facebook-adapter',
-    pageAccessToken: 'pageAccessToken',
-    verifyToken: 'verifyToken'
-  }
-  ...
+const AdapterFacebook = require('starbot-facebook-adapter');
+
+const adapter = new AdapterFacebook({
+  pageAccessToken: 'pageAccessToken',
+  verifyToken: 'verifyToken'
 });
 ```
 
