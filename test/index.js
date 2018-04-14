@@ -1,23 +1,23 @@
-'use strict';
-
 require('chai').should();
 const sinon = require('sinon');
-const botControl = require('starbot-ktotam-bot');
+const Bot = require('starbot-ktotam-bot');
 const Adapter = require('..');
 const axios = require('axios');
 
 describe('FB Adapter', () => {
-  let bot = botControl({
+  let bot = new Bot({
     message: 'Кто там?'
   });
 
-  let fb = Adapter({
+  let adapter = new Adapter({
     pageAccessToken: 'pageAccessToken',
     verifyToken: 'verifyToken'
-  }, bot);
+  });
+
+  adapter.bot = bot;
 
   it('confirmation', async () => {
-    await fb({query: {
+    await adapter.middleware({ query: {
       'hub.mode': 'subscribe',
       'hub.verify_token': 'verifyToken',
       'hub.challenge': 'foo'
@@ -31,7 +31,7 @@ describe('FB Adapter', () => {
   });
 
   it('confirmation fail', async () => {
-    await fb({query: {
+    await adapter.middleware({ query: {
       'hub.mode': 'subscribe',
       'hub.verify_token': 'verifyTokenBar',
       'hub.challenge': 'foo'
@@ -55,7 +55,7 @@ describe('FB Adapter', () => {
       });
     });
 
-    await fb({
+    await adapter.middleware({
       query: {
         'hub.mode': 'subscribe'
       },
@@ -77,9 +77,11 @@ describe('FB Adapter', () => {
         ]
       }
     }, {
-      send: () => {},
+      send: function () {},
       status: () => {},
-      end: () => {}
+      end: function () {}
+    }, (err) => {
+      err.should.be.null();
     });
 
     stub.restore();

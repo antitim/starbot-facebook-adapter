@@ -1,54 +1,73 @@
-'use strict';
-
 const axios = require('axios');
 
-module.exports = function (settings, botControl) {
-  let { pageAccessToken, verifyToken } = settings;
+class Adapter {
+  constructor (settings) {
+    if (!settings.pageAccessToken) throw new Error('Not specified pageAccessToken in settings');
+    if (!settings.verifyToken) throw new Error('Not specified verifyToken in settings');
 
-  return async (req, res) => {
-    res.status(200);
+    this.pageAccessToken = settings.pageAccessToken;
+    this.verifyToken = settings.verifyToken;
+  }
 
-    if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === verifyToken) {
-      res.send(req.query['hub.challenge']);
-    }
+  set bot (bot) {
+    this.message = bot.message.bind(bot);
 
-    if (req.body && req.body.object) {
-      let data = req.body;
+    bot.on('message', (message) => {
+      axios.request({
+        url: 'https://graph.facebook.com/v2.6/me/messages',
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        params: {
+          access_token: this.pageAccessToken
+        },
+        data: JSON.stringify({
+          recipient: {
+            id: message.client.split('fb-')[1]
+          },
+          message: {
+            text: message.text
+          }
+        })
+      });
+    });
+  }
 
-      if (data.object === 'page' && data.entry) {
-        for (let entry of data.entry) {
-          for (let event of entry.messaging) {
-            if (event.message) {
-              let text = event.message.text || '';
-              let userId = 'fb_' + event.sender.id;
+  async middleware (req, res, next) {
+    try {
+      if (
+        req.query['hub.mode'] === 'subscribe' &&
+        req.query['hub.verify_token'] === this.verifyToken
+      ) {
+        res.send(req.query['hub.challenge']);
+      }
 
-              let answer = await botControl(userId, text);
+      if (req.body && req.body.object) {
+        const body = req.body;
 
-              userId = answer.userId.split('fb_')[1];
-              text = answer.text;
+        if (
+          body.object === 'page' &&
+          body.entry
+        ) {
+          for (let entry of body.entry) {
+            for (let event of entry.messaging) {
+              if (event.message) {
+                const text = event.message.text || '';
 
-              await axios.request({
-                url: 'https://graph.facebook.com/v2.6/me/messages',
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                params: {
-                  access_token: pageAccessToken
-                },
-                data: JSON.stringify({
-                  recipient: {
-                    id: userId
-                  },
-                  message: {
-                    text: text
-                  }
-                })
-              });
+                await this.message({
+                  client: `fb-${event.sender.id}`,
+                  text
+                });
+              }
             }
           }
-        };
+        }
       }
-    }
 
-    res.end();
-  };
-};
+      res.end();
+    } catch (err) {
+      next(err);
+    }
+  }
+}
+
+module.exports = Adapter;
